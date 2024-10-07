@@ -1,0 +1,20 @@
+name: trabalho
+description: A new Flutter project.
+
+environment:
+  sdk: ^3.5.0
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+  mask_text_input_formatter: ^2.4.0
+  sqflite: ^2.2.8+4
+  path: ^1.8.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
