@@ -8,9 +8,122 @@ class AgendaApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Agenda de Contatos',
+      title: 'Agenda de Contatos v2 atualizado master nice bolado',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: ContactListScreen(),
+      home: SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _checkToken();
+  }
+
+  Future<void> _checkToken() async {
+    final token = await DatabaseHelper.instance.getToken();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => token != null ? ContactListScreen() : LoginScreen(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class LoginScreen extends StatefulWidget {
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  String _username = '';
+  String _password = '';
+
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      final user = await DatabaseHelper.instance.getUser(_username);
+      if (user != null && user.password == _password) {
+        await DatabaseHelper.instance.saveToken(_username);
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => ContactListScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Usuário ou senha incorretos')),
+        );
+      }
+    }
+  }
+
+  void _register() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      final user = User(username: _username, password: _password);
+      try {
+        await DatabaseHelper.instance.insertUser(user);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Usuário cadastrado com sucesso')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao tentar cadastrar usuário!')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Login')),
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Usuário'),
+                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                onSaved: (value) => _username = value!,
+              ),
+              TextFormField(
+                decoration: InputDecoration(labelText: 'Senha'),
+                obscureText: true,
+                validator: (value) => value!.isEmpty ? 'Campo obrigatório' : null,
+                onSaved: (value) => _password = value!,
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                child: Text('Entrar'),
+                onPressed: _login,
+              ),
+              TextButton(
+                child: Text('Cadastrar'),
+                onPressed: _register,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -39,7 +152,20 @@ class _ContactListScreenState extends State<ContactListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Agenda de Contatos')),
+      appBar: AppBar(
+        title: Text('Agenda de Contatos'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.exit_to_app),
+            onPressed: () async {
+              await DatabaseHelper.instance.removeToken();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       body: contacts.isEmpty
           ? Center(child: Text('Nenhum contato'))
           : ListView.builder(
@@ -146,14 +272,14 @@ class _ContactFormScreenState extends State<ContactFormScreen> {
                 decoration: InputDecoration(labelText: 'Telefone'),
                 keyboardType: TextInputType.phone,
                 inputFormatters: [phoneMaskFormatter],
-                validator: (value) => value!.length < 14 ? 'Telefone inválido' : null,
+                validator: (value) => value!.length < 14 ? 'Telefone inexistente' : null,
                 onSaved: (value) => phone = value!,
               ),
               TextFormField(
                 initialValue: email,
                 decoration: InputDecoration(labelText: 'E-mail'),
                 keyboardType: TextInputType.emailAddress,
-                validator: (value) => !value!.contains('@') ? 'E-mail inválido' : null,
+                validator: (value) => !value!.contains('@') ? 'E-mail incorreto' : null,
                 onSaved: (value) => email = value!,
               ),
               SizedBox(height: 20),
