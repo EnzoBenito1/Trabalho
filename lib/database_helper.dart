@@ -1,6 +1,6 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class Contact {
   final int? id;
@@ -47,6 +47,8 @@ class User {
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  final _storage = const FlutterSecureStorage();
+  static const _tokenKey = 'user_token';
 
   DatabaseHelper._init();
 
@@ -92,7 +94,6 @@ class DatabaseHelper {
       ''');
     }
   }
-
 
   Future<int> insertContact(Contact contact) async {
     final db = await database;
@@ -143,19 +144,16 @@ class DatabaseHelper {
     return null;
   }
 
-  // Token de autenticação(lembrar)
+  // Métodos de token de autenticação usando secure storage
   Future<void> saveToken(String username) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_token', username);
+    await _storage.write(key: _tokenKey, value: username);
   }
 
   Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('user_token');
+    return await _storage.read(key: _tokenKey);
   }
 
   Future<void> removeToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_token');
+    await _storage.delete(key: _tokenKey);
   }
 }
